@@ -64,10 +64,7 @@
   const canvas = document.getElementById("gameCanvas");
   const ctx = canvas.getContext("2d");
 
-  const characterImg = new Image();
-  characterImg.src = "https://files.oaiusercontent.com/file-jtBK3BM3lb4iZyLAFK8cN2kS?se=2025-04-23T23%3A40%3A00Z&sp=r&sv=2021-08-06&sr=b&sig=iA%2B1UL4MxlnTR%2FH7cgKElL6N%2FWC8y0yyFybrP1CjXQA%3D";
-
-  let human = { x: 50, y: 300, width: 40, height: 40, velocity: 0 };
+  let human = { x: 50, y: 300, width: 30, height: 30, velocity: 0 };
   let gravity = 0.5;
   let jumpForce = -8;
   let pipes = [];
@@ -86,7 +83,8 @@
   });
 
   function drawHuman() {
-    ctx.drawImage(characterImg, human.x, human.y, human.width, human.height);
+    ctx.fillStyle = "black";
+    ctx.fillRect(human.x, human.y, human.width, human.height);
   }
 
   function drawPipes() {
@@ -106,6 +104,7 @@
     pipes.forEach(pipe => {
       pipe.x -= 2;
 
+      // Collision detection
       if (
         human.x < pipe.x + pipe.width &&
         human.x + human.width > pipe.x &&
@@ -169,9 +168,7 @@
     requestAnimationFrame(loop);
   }
 
-  characterImg.onload = () => {
-    loop(); // Start game once image is ready
-  };
+  loop();
 </script>
 
 </body>
