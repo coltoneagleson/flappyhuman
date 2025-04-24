@@ -1,124 +1,157 @@
-import React, { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Flappy Human</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: linear-gradient(to bottom, #3b8beb, #1a1aff);
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background-color: #87CEEB;
+    }
+    #gameOver {
+      position: absolute;
+      top: 40%;
+      width: 100%;
+      text-align: center;
+      font-size: 3em;
+      color: white;
+      font-family: sans-serif;
+    }
+    #restart {
+      display: none;
+      position: absolute;
+      top: 55%;
+      width: 100%;
+      text-align: center;
+      font-size: 1.5em;
+      color: white;
+      cursor: pointer;
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+<body>
 
-const GRAVITY = 0.5;
-const JUMP = -10;
-const PIPE_WIDTH = 60;
-const PIPE_GAP = 150;
-const GAME_WIDTH = 800;
-const GAME_HEIGHT = 600;
+<canvas id="gameCanvas" width="400" height="600"></canvas>
+<div id="gameOver">Game Over</div>
+<div id="restart" onclick="restartGame()">Click to Restart</div>
 
-export default function FlappyHumanGame() {
-  const [humanY, setHumanY] = useState(GAME_HEIGHT / 2);
-  const [velocity, setVelocity] = useState(0);
-  const [pipes, setPipes] = useState([]);
-  const [score, setScore] = useState(0);
-  const [gameOver, setGameOver] = useState(false);
-  const gameRef = useRef();
+<script>
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
 
-  useEffect(() => {
-    if (gameOver) return;
+  let human = { x: 50, y: 300, width: 30, height: 30, velocity: 0 };
+  let gravity = 0.5;
+  let jumpForce = -8;
+  let pipes = [];
+  let frame = 0;
+  let gameRunning = true;
+  let score = 0;
 
-    const interval = setInterval(() => {
-      setVelocity((v) => v + GRAVITY);
-      setHumanY((y) => y + velocity);
+  document.addEventListener("keydown", () => {
+    if (gameRunning) {
+      human.velocity = jumpForce;
+    }
+  });
 
-      setPipes((prevPipes) => {
-        const newPipes = prevPipes
-          .map((pipe) => ({ ...pipe, x: pipe.x - 5 }))
-          .filter((pipe) => pipe.x + PIPE_WIDTH > 0);
+  function drawHuman() {
+    ctx.fillStyle = "black";
+    ctx.fillRect(human.x, human.y, human.width, human.height);
+  }
 
-        if (newPipes.length === 0 || newPipes[newPipes.length - 1].x < GAME_WIDTH - 300) {
-          const topHeight = Math.random() * (GAME_HEIGHT - PIPE_GAP - 100) + 50;
-          newPipes.push({ x: GAME_WIDTH, topHeight });
-        }
+  function drawPipes() {
+    ctx.fillStyle = "green";
+    pipes.forEach(pipe => {
+      ctx.fillRect(pipe.x, 0, pipe.width, pipe.top);
+      ctx.fillRect(pipe.x, pipe.top + pipe.gap, pipe.width, canvas.height);
+    });
+  }
 
-        newPipes.forEach((pipe) => {
-          if (
-            pipe.x + PIPE_WIDTH < 100 &&
-            !pipe.passed
-          ) {
-            pipe.passed = true;
-            setScore((s) => s + 1);
-          }
-        });
+  function updatePipes() {
+    if (frame % 90 === 0) {
+      const top = Math.random() * 200 + 50;
+      pipes.push({ x: canvas.width, width: 40, top: top, gap: 140 });
+    }
 
-        return newPipes;
-      });
+    pipes.forEach(pipe => {
+      pipe.x -= 2;
 
       // Collision detection
-      pipes.forEach((pipe) => {
-        if (
-          100 < pipe.x + PIPE_WIDTH &&
-          100 + 40 > pipe.x &&
-          (humanY < pipe.topHeight || humanY + 40 > pipe.topHeight + PIPE_GAP)
-        ) {
-          setGameOver(true);
-        }
-      });
-
-      if (humanY < 0 || humanY > GAME_HEIGHT) {
-        setGameOver(true);
+      if (
+        human.x < pipe.x + pipe.width &&
+        human.x + human.width > pipe.x &&
+        (human.y < pipe.top || human.y + human.height > pipe.top + pipe.gap)
+      ) {
+        gameOver();
       }
-    }, 30);
 
-    return () => clearInterval(interval);
-  }, [velocity, humanY, pipes, gameOver]);
+      // Scoring
+      if (pipe.x + pipe.width < human.x && !pipe.passed) {
+        pipe.passed = true;
+        score++;
+      }
+    });
 
-  const jump = () => {
-    if (!gameOver) {
-      setVelocity(JUMP);
-    } else {
-      setHumanY(GAME_HEIGHT / 2);
-      setVelocity(0);
-      setPipes([]);
-      setScore(0);
-      setGameOver(false);
+    // Remove off-screen pipes
+    pipes = pipes.filter(pipe => pipe.x + pipe.width > 0);
+  }
+
+  function drawScore() {
+    ctx.fillStyle = "white";
+    ctx.font = "20px sans-serif";
+    ctx.fillText("Score: " + score, 10, 30);
+  }
+
+  function gameOver() {
+    gameRunning = false;
+    document.getElementById("gameOver").style.display = "block";
+    document.getElementById("restart").style.display = "block";
+  }
+
+  function restartGame() {
+    human.y = 300;
+    human.velocity = 0;
+    pipes = [];
+    frame = 0;
+    score = 0;
+    gameRunning = true;
+    document.getElementById("gameOver").style.display = "none";
+    document.getElementById("restart").style.display = "none";
+    loop();
+  }
+
+  function loop() {
+    if (!gameRunning) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Update
+    human.velocity += gravity;
+    human.y += human.velocity;
+
+    if (human.y > canvas.height || human.y < 0) {
+      gameOver();
     }
-  };
 
-  return (
-    <div
-      ref={gameRef}
-      onClick={jump}
-      className="relative w-[800px] h-[600px] bg-sky-300 overflow-hidden border-4 border-black cursor-pointer"
-    >
-      <motion.div
-        className="absolute left-[100px] w-[40px] h-[40px] rounded-full bg-yellow-500"
-        animate={{ y: humanY }}
-        transition={{ ease: "easeOut", duration: 0.1 }}
-      >
-        {/* Animated Human */}
-        <div className="w-full h-full bg-[url('/human-sprite.gif')] bg-cover" />
-      </motion.div>
-      {pipes.map((pipe, i) => (
-        <React.Fragment key={i}>
-          <div
-            className="absolute bg-green-700"
-            style={{
-              left: pipe.x,
-              top: 0,
-              width: PIPE_WIDTH,
-              height: pipe.topHeight,
-            }}
-          />
-          <div
-            className="absolute bg-green-700"
-            style={{
-              left: pipe.x,
-              top: pipe.topHeight + PIPE_GAP,
-              width: PIPE_WIDTH,
-              height: GAME_HEIGHT - pipe.topHeight - PIPE_GAP,
-            }}
-          />
-        </React.Fragment>
-      ))}
-      <div className="absolute top-4 left-4 text-2xl font-bold text-white">Score: {score}</div>
-      {gameOver && (
-        <div className="absolute inset-0 flex items-center justify-center text-4xl font-bold text-red-700">
-          Game Over! Click to Restart
-        </div>
-      )}
-    </div>
-  );
-}
+    updatePipes();
+
+    // Draw
+    drawHuman();
+    drawPipes();
+    drawScore();
+
+    frame++;
+    requestAnimationFrame(loop);
+  }
+
+  loop();
+</script>
+
+</body>
+</html>
