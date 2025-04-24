@@ -2,27 +2,45 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Flappy Human</title>
+  <title>Flappy Ayden</title>
   <style>
     body {
       margin: 0;
       overflow: hidden;
       background: linear-gradient(to bottom, #3b8beb, #1a1aff);
+      font-family: sans-serif;
+      text-align: center;
     }
+
+    h1 {
+      margin: 20px 0 10px;
+      font-size: 48px;
+      color: white;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
     canvas {
       display: block;
       margin: 0 auto;
       background-color: #87CEEB;
+      border: 2px solid white;
     }
+
     #gameOver {
       position: absolute;
-      top: 40%;
+      top: 42%;
       width: 100%;
       text-align: center;
       font-size: 3em;
       color: white;
-      font-family: sans-serif;
+      display: none;
     }
+
     #restart {
       display: none;
       position: absolute;
@@ -32,12 +50,12 @@
       font-size: 1.5em;
       color: white;
       cursor: pointer;
-      font-family: sans-serif;
     }
   </style>
 </head>
 <body>
 
+<h1>Flappy Ayden</h1>
 <canvas id="gameCanvas" width="400" height="600"></canvas>
 <div id="gameOver">Game Over</div>
 <div id="restart" onclick="restartGame()">Click to Restart</div>
@@ -54,9 +72,13 @@
   let gameRunning = true;
   let score = 0;
 
-  document.addEventListener("keydown", () => {
-    if (gameRunning) {
-      human.velocity = jumpForce;
+  document.addEventListener("keydown", (e) => {
+    if (e.code === "Space") {
+      if (gameRunning) {
+        human.velocity = jumpForce;
+      } else {
+        restartGame();
+      }
     }
   });
 
@@ -88,17 +110,15 @@
         human.x + human.width > pipe.x &&
         (human.y < pipe.top || human.y + human.height > pipe.top + pipe.gap)
       ) {
-        gameOver();
+        triggerGameOver();
       }
 
-      // Scoring
       if (pipe.x + pipe.width < human.x && !pipe.passed) {
         pipe.passed = true;
         score++;
       }
     });
 
-    // Remove off-screen pipes
     pipes = pipes.filter(pipe => pipe.x + pipe.width > 0);
   }
 
@@ -108,7 +128,7 @@
     ctx.fillText("Score: " + score, 10, 30);
   }
 
-  function gameOver() {
+  function triggerGameOver() {
     gameRunning = false;
     document.getElementById("gameOver").style.display = "block";
     document.getElementById("restart").style.display = "block";
@@ -131,17 +151,15 @@
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Update
     human.velocity += gravity;
     human.y += human.velocity;
 
     if (human.y > canvas.height || human.y < 0) {
-      gameOver();
+      triggerGameOver();
     }
 
     updatePipes();
 
-    // Draw
     drawHuman();
     drawPipes();
     drawScore();
